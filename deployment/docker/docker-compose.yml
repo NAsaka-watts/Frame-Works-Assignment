@@ -1,0 +1,64 @@
+# Docker Compose configuration for COVID-19 Research Analyzer
+version: '3.8'
+
+services:
+  covid-analyzer:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - COVID_ANALYZER_ENVIRONMENT=production
+      - COVID_ANALYZER_DEBUG=false
+      - COVID_ANALYZER_LOG_LEVEL=INFO
+      - COVID_ANALYZER_ENABLE_CACHING=true
+      - COVID_ANALYZER_CACHE_TTL=3600
+      - COVID_ANALYZER_MAX_FILE_SIZE_MB=500
+      - COVID_ANALYZER_ENABLE_SAMPLING=true
+      - COVID_ANALYZER_SAMPLE_SIZE_DEFAULT=10000
+    volumes:
+      - ./data:/app/data:ro
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - covid-analyzer-network
+
+  # Optional: Redis for caching (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - covid-analyzer-network
+
+  # Optional: Nginx reverse proxy (uncomment if needed)
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - covid-analyzer
+  #   restart: unless-stopped
+  #   networks:
+  #     - covid-analyzer-network
+
+networks:
+  covid-analyzer-network:
+    driver: bridge
+
+volumes:
+  redis-data:

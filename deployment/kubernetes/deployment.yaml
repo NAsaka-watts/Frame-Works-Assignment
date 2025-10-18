@@ -1,0 +1,152 @@
+# Kubernetes Deployment for COVID-19 Research Analyzer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: covid-analyzer
+  labels:
+    app: covid-analyzer
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: covid-analyzer
+  template:
+    metadata:
+      labels:
+        app: covid-analyzer
+        version: v1.0.0
+    spec:
+      containers:
+      - name: covid-analyzer
+        image: covid-analyzer:latest
+        ports:
+        - containerPort: 8501
+          name: http
+        env:
+        - name: COVID_ANALYZER_ENVIRONMENT
+          value: "production"
+        - name: COVID_ANALYZER_DEBUG
+          value: "false"
+        - name: COVID_ANALYZER_LOG_LEVEL
+          value: "INFO"
+        - name: COVID_ANALYZER_ENABLE_CACHING
+          value: "true"
+        - name: COVID_ANALYZER_CACHE_TTL
+          value: "3600"
+        - name: COVID_ANALYZER_MAX_FILE_SIZE_MB
+          value: "500"
+        - name: COVID_ANALYZER_ENABLE_SAMPLING
+          value: "true"
+        - name: COVID_ANALYZER_SAMPLE_SIZE_DEFAULT
+          value: "10000"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8501
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+          readOnly: true
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: covid-analyzer-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: covid-analyzer-logs-pvc
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: covid-analyzer-service
+  labels:
+    app: covid-analyzer
+spec:
+  selector:
+    app: covid-analyzer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8501
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: covid-analyzer-data-pvc
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: covid-analyzer-logs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: covid-analyzer-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+spec:
+  tls:
+  - hosts:
+    - covid-analyzer.example.com
+    secretName: covid-analyzer-tls
+  rules:
+  - host: covid-analyzer.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: covid-analyzer-service
+            port:
+              number: 80
