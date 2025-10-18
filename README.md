@@ -238,8 +238,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/covid-research-analyzer/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/covid-research-analyzer/discussions)
+- **Issues**: [GitHub Issues](https://github.com/NAsaka-watts/Frame-Works-Assignment/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/NAsaka-watts/Frame-Works-Assignment/discussions)
 - **Email**: your-email@example.com
 
 ## 🔗 Links
