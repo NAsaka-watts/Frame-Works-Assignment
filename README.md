@@ -15,7 +15,7 @@ An interactive web application for analyzing and visualizing COVID-19 research p
 
 ## 🚀 Live Demo
 
-**[Try the app here!](https://your-app-url.streamlit.app/)**
+**[Try the app here!](https://frame-works-assignment.streamlit.app/)**
 
 ## 📋 Requirements
 
